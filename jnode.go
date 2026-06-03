@@ -298,7 +298,7 @@ func (j *Node) NodeMap(args ...NodeMap) NodeMap {
 
 // List guarantees the return of a `[]interface{}` (with optional default)
 //
-// useful when you want to interate over array values in a succinct manner:
+// useful when you want to iterate over array values in a succinct manner:
 //
 //	for i, v := range js.Get("results").List() {
 //		fmt.Println(i, v)
@@ -323,7 +323,7 @@ func (j *Node) List(args ...[]any) []any {
 
 // Map guarantees the return of a `map[string]interface{}` (with optional default)
 //
-// useful when you want to interate over map values in a succinct manner:
+// useful when you want to iterate over map values in a succinct manner:
 //
 //	for k, v := range js.Get("dictionary").Map() {
 //		fmt.Println(k, v)
