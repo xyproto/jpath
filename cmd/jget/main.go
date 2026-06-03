@@ -20,9 +20,13 @@ func main() {
 	filename := flag.Args()[0]
 	JSONpath := flag.Args()[1]
 
-	foundString, err := jpath.GetString(filename, JSONpath)
+	jf, err := jpath.NewFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(foundString)
+	node, err := jf.GetNode(JSONpath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(node.StringValue())
 }

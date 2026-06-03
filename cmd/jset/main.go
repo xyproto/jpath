@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/xyproto/jpath"
@@ -21,7 +22,38 @@ func main() {
 	JSONpath := flag.Args()[1]
 	value := flag.Args()[2]
 
-	err := jpath.SetString(filename, JSONpath, value)
+	// Try to interpret the value as JSON (number, bool, null, object, array)
+	var jsonVal any
+	if err := json.Unmarshal([]byte(value), &jsonVal); err != nil {
+		// Not valid JSON, treat as a plain string
+		jsonVal = value
+	} else if _, ok := jsonVal.(string); ok {
+		// A quoted JSON string like `"hello"` should be stored without quotes
+		// but a bare word like `hello` (which failed Unmarshal above) is also a string.
+		// This branch handles the quoted case; bare words are handled by the fallback above.
+	}
+
+	jf, err := jpath.NewFile(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	node, parentNode, nodeErr := jf.GetRootNode().GetNodes(JSONpath)
+	_ = node
+	if nodeErr != nil {
+		log.Fatal(nodeErr)
+	}
+	m, ok := parentNode.CheckMap()
+	if !ok {
+		log.Fatalf("Parent is not a map: %s", JSONpath)
+	}
+	m[jpath.LastPart(JSONpath)] = jsonVal
+
+	data, err := jf.JSON()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = jf.Write(data)
 	if err != nil {
 		log.Fatal(err)
 	}
