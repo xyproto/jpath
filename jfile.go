@@ -13,9 +13,9 @@ var (
 
 // JFile represents a JSON file and contains the filename and root node
 type JFile struct {
-	filename string
 	rootnode *Node
 	rw       *sync.RWMutex
+	filename string
 	pretty   bool // Indent JSON output prettily
 }
 
@@ -30,7 +30,7 @@ func NewFile(filename string) (*JFile, error) {
 		return nil, err
 	}
 	rw := &sync.RWMutex{}
-	return &JFile{filename, js, rw, true}, nil
+	return &JFile{js, rw, filename, true}, nil
 }
 
 // GetFilename returns the current filename
