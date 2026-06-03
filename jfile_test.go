@@ -46,7 +46,10 @@ func TestGetFile(t *testing.T) {
 	assert.NotEqual(t, nil, js)
 
 	node := js.GetNode("[1]")
-	assert.Equal(t, NilNode, node)
+	assert.NotEqual(t, NilNode, node)
+	s, ok := node.Get("x").CheckString()
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "2", s)
 
 	found, err = GetString(tmpfile, "[1].x")
 	assert.Equal(t, nil, err)

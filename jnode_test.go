@@ -469,3 +469,75 @@ func TestDel(t *testing.T) {
 
 	assert.Equal(t, true, bytes.Equal(newJSON, correctJSON))
 }
+
+func TestSetPath(t *testing.T) {
+	js, err := New([]byte(`{"user":{"name":"Alice"}}`))
+	assert.Equal(t, nil, err)
+
+	js.SetPath("user.name", "Bob")
+	assert.Equal(t, "Bob", js.Get("user", "name").String())
+
+	js.SetPath("x.user.name", "Charlie")
+	assert.Equal(t, "Charlie", js.Get("user", "name").String())
+
+	js.SetPath(".user.name", "Dave")
+	assert.Equal(t, "Dave", js.Get("user", "name").String())
+
+	js.SetPath("settings.theme.color", "blue")
+	assert.Equal(t, "blue", js.Get("settings", "theme", "color").String())
+}
+
+func TestStringValue(t *testing.T) {
+	js, err := New([]byte(`{"name":"Algernon","count":42,"active":true,"items":[1,2,3],"meta":{"k":"v"}}`))
+	assert.Equal(t, nil, err)
+
+	assert.Equal(t, "Algernon", js.Get("name").StringValue())
+	assert.Equal(t, "42", js.Get("count").StringValue())
+	assert.Equal(t, "true", js.Get("active").StringValue())
+	assert.Equal(t, "[1,2,3]", js.Get("items").StringValue())
+	assert.Equal(t, `{"k":"v"}`, js.Get("meta").StringValue())
+	assert.Equal(t, "", js.Get("missing").StringValue())
+	assert.Equal(t, "", NilNode.StringValue())
+}
+
+func TestGetNodePathEquivalence(t *testing.T) {
+	js, err := New([]byte(`{"user":{"name":"Alice","scores":[10,20]}}`))
+	assert.Equal(t, nil, err)
+
+	assert.Equal(t, "Alice", js.GetNode("x.user.name").String())
+	assert.Equal(t, "Alice", js.GetNode(".user.name").String())
+	assert.Equal(t, "Alice", js.GetNode("user.name").String())
+
+	n := js.GetNode("user")
+	_, ok := n.CheckMap()
+	assert.Equal(t, true, ok)
+}
+
+func TestGetNodeBracketPaths(t *testing.T) {
+	js, err := New([]byte(`[{"id":"first"},{"id":"second"}]`))
+	assert.Equal(t, nil, err)
+
+	// Bare bracket path without "x" prefix
+	assert.Equal(t, "first", js.GetNode("[0].id").String())
+	assert.Equal(t, "second", js.GetNode("[1].id").String())
+
+	// With "x" prefix
+	assert.Equal(t, "first", js.GetNode("x[0].id").String())
+
+	// Bracket path on a nested list
+	js2, err := New([]byte(`{"items":[{"name":"a"},{"name":"b"}]}`))
+	assert.Equal(t, nil, err)
+
+	assert.Equal(t, "a", js2.GetNode("items[0].name").String())
+	assert.Equal(t, "b", js2.GetNode("x.items[1].name").String())
+	assert.Equal(t, "b", js2.GetNode(".items[1].name").String())
+}
+
+func TestGetIndexNegative(t *testing.T) {
+	js, err := New([]byte(`{"list":[1,2,3]}`))
+	assert.Equal(t, nil, err)
+
+	// Negative index should not panic, should return NilNode
+	n := js.Get("list").Get(-1)
+	assert.Equal(t, NilNode, n)
+}
