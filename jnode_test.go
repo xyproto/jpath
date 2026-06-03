@@ -71,11 +71,11 @@ func TestSimplejson(t *testing.T) {
 	ms2 := js.Get("test").Get("missing_string").String("fyea")
 	assert.Equal(t, "fyea", ms2)
 
-	ma2 := js.Get("test").Get("missing_list").List([]interface{}{"1", 2, "3"})
-	assert.Equal(t, ma2, []interface{}{"1", 2, "3"})
+	ma2 := js.Get("test").Get("missing_list").List([]any{"1", 2, "3"})
+	assert.Equal(t, ma2, []any{"1", 2, "3"})
 
-	mm2 := js.Get("test").Get("missing_map").Map(map[string]interface{}{"found": false})
-	assert.Equal(t, mm2, map[string]interface{}{"found": false})
+	mm2 := js.Get("test").Get("missing_map").Map(map[string]any{"found": false})
+	assert.Equal(t, mm2, map[string]any{"found": false})
 
 	gp, _ := js.Get("test", "string").CheckString()
 	assert.Equal(t, "simplejson", gp)
@@ -189,7 +189,7 @@ func TestSetBranchNoPath(t *testing.T) {
 	f := js.Get("some_number").Float64(99.0)
 	assert.Equal(t, f, 1.0)
 
-	js.SetBranch([]string{}, map[string]interface{}{"foo": "bar"})
+	js.SetBranch([]string{}, map[string]any{"foo": "bar"})
 
 	s, ok := js.Get("foo").CheckString()
 	assert.Equal(t, true, ok)
@@ -206,23 +206,23 @@ func TestPathWillAugmentExisting(t *testing.T) {
 	js.SetBranch([]string{"this", "d"}, "dd")
 
 	cases := []struct {
-		path    []interface{}
+		path    []any
 		outcome string
 	}{
 		{
-			path:    []interface{}{"this", "a"},
+			path:    []any{"this", "a"},
 			outcome: "aa",
 		},
 		{
-			path:    []interface{}{"this", "b"},
+			path:    []any{"this", "b"},
 			outcome: "bb",
 		},
 		{
-			path:    []interface{}{"this", "c"},
+			path:    []any{"this", "c"},
 			outcome: "cc",
 		},
 		{
-			path:    []interface{}{"this", "d"},
+			path:    []any{"this", "d"},
 			outcome: "dd",
 		},
 	}
@@ -277,10 +277,10 @@ func TestNewFromReader(t *testing.T) {
 	}
 
 	ma := js.Get("test").Get("list").List()
-	assert.Equal(t, ma, []interface{}{float64(1), "2", float64(3)})
+	assert.Equal(t, ma, []any{float64(1), "2", float64(3)})
 
 	mm := js.Get("test").Get("listwithsubs").Get(0).Map()
-	assert.Equal(t, mm, map[string]interface{}{"subkeyone": float64(1)})
+	assert.Equal(t, mm, map[string]any{"subkeyone": float64(1)})
 
 	assert.Equal(t, js.Get("test").Get("bignum").Int64(), int64(8000000000))
 }
@@ -314,10 +314,10 @@ func TestSimplejson2(t *testing.T) {
 	}
 
 	ma := js.Get("test").Get("list").List()
-	assert.Equal(t, ma, []interface{}{float64(1), "2", float64(3)})
+	assert.Equal(t, ma, []any{float64(1), "2", float64(3)})
 
 	mm := js.Get("test").Get("listwithsubs").Get(0).Map()
-	assert.Equal(t, mm, map[string]interface{}{"subkeyone": float64(1)})
+	assert.Equal(t, mm, map[string]any{"subkeyone": float64(1)})
 
 	assert.Equal(t, js.Get("test").Get("bignum").Int64(), int64(8000000000))
 }

@@ -19,7 +19,7 @@ const Version = 1.0
 type (
 	// Node is a JSON document, or a part of a JSON document
 	Node struct {
-		data interface{}
+		data any
 	}
 	// NodeList is a list of nodes
 	NodeList []*Node
@@ -51,12 +51,12 @@ func New(body []byte) (*Node, error) {
 // NewNode returns a pointer to a new, empty `Node` object
 func NewNode() *Node {
 	return &Node{
-		data: make(map[string]interface{}),
+		data: make(map[string]any),
 	}
 }
 
 // Interface returns the underlying data
-func (j *Node) Interface() interface{} {
+func (j *Node) Interface() any {
 	return j.data
 }
 
@@ -90,7 +90,7 @@ func (j *Node) MarshalJSON() ([]byte, error) {
 
 // Set modifies `Node` map by `key` and `value`
 // Useful for changing single key/value in a `Node` object easily.
-func (j *Node) Set(key string, val interface{}) {
+func (j *Node) Set(key string, val any) {
 	m, ok := j.CheckMap()
 	if !ok {
 		return
@@ -100,37 +100,37 @@ func (j *Node) Set(key string, val interface{}) {
 
 // SetBranch modifies `Node`, recursively checking/creating map keys for the supplied path,
 // and then finally writing in the value.
-func (j *Node) SetBranch(branch []string, val interface{}) {
+func (j *Node) SetBranch(branch []string, val any) {
 	if len(branch) == 0 {
 		j.data = val
 		return
 	}
 
 	// in order to insert our branch, we need map[string]interface{}
-	if _, ok := (j.data).(map[string]interface{}); !ok {
+	if _, ok := (j.data).(map[string]any); !ok {
 		// have to replace with something suitable
-		j.data = make(map[string]interface{})
+		j.data = make(map[string]any)
 	}
-	curr := j.data.(map[string]interface{})
+	curr := j.data.(map[string]any)
 
 	for i := 0; i < len(branch)-1; i++ {
 		b := branch[i]
 		// key exists?
 		if _, ok := curr[b]; !ok {
-			n := make(map[string]interface{})
+			n := make(map[string]any)
 			curr[b] = n
 			curr = n
 			continue
 		}
 
 		// make sure the value is the right sort of thing
-		if _, ok := curr[b].(map[string]interface{}); !ok {
+		if _, ok := curr[b].(map[string]any); !ok {
 			// have to replace with something suitable
-			n := make(map[string]interface{})
+			n := make(map[string]any)
 			curr[b] = n
 		}
 
-		curr = curr[b].(map[string]interface{})
+		curr = curr[b].(map[string]any)
 	}
 
 	// add remaining k/v
@@ -168,7 +168,7 @@ func (j *Node) GetIndex(index int) (*Node, bool) {
 // the pointer is always a valid Node, allowing for chained operations
 //
 //	newJs := js.Get("top_level", "entries", 3, "dict")
-func (j *Node) Get(branch ...interface{}) *Node {
+func (j *Node) Get(branch ...any) *Node {
 	jin, ok := j.CheckGet(branch...)
 	if !ok {
 		return NilNode
@@ -181,7 +181,7 @@ func (j *Node) Get(branch ...interface{}) *Node {
 // the Node pointer may be nil
 //
 //	newJs, ok := js.Get("top_level", "entries", 3, "dict")
-func (j *Node) CheckGet(branch ...interface{}) (*Node, bool) {
+func (j *Node) CheckGet(branch ...any) (*Node, bool) {
 	jin := j
 	var ok bool
 	for _, p := range branch {
@@ -227,16 +227,16 @@ func (j *Node) CheckNodeList() ([]*Node, bool) {
 }
 
 // CheckMap type asserts to `map`
-func (j *Node) CheckMap() (map[string]interface{}, bool) {
-	if m, ok := (j.data).(map[string]interface{}); ok {
+func (j *Node) CheckMap() (map[string]any, bool) {
+	if m, ok := (j.data).(map[string]any); ok {
 		return m, true
 	}
 	return nil, false
 }
 
 // CheckList type asserts to a slice
-func (j *Node) CheckList() ([]interface{}, bool) {
-	if a, ok := (j.data).([]interface{}); ok {
+func (j *Node) CheckList() ([]any, bool) {
+	if a, ok := (j.data).([]any); ok {
 		return a, true
 	}
 	return nil, false
@@ -303,8 +303,8 @@ func (j *Node) NodeMap(args ...NodeMap) NodeMap {
 //	for i, v := range js.Get("results").List() {
 //		fmt.Println(i, v)
 //	}
-func (j *Node) List(args ...[]interface{}) []interface{} {
-	var def []interface{}
+func (j *Node) List(args ...[]any) []any {
+	var def []any
 
 	switch len(args) {
 	case 0:
@@ -328,8 +328,8 @@ func (j *Node) List(args ...[]interface{}) []interface{} {
 //	for k, v := range js.Get("dictionary").Map() {
 //		fmt.Println(k, v)
 //	}
-func (j *Node) Map(args ...map[string]interface{}) map[string]interface{} {
-	var def map[string]interface{}
+func (j *Node) Map(args ...map[string]any) map[string]any {
+	var def map[string]any
 
 	switch len(args) {
 	case 0:
