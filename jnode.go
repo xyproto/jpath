@@ -2,7 +2,6 @@
 package jpath
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -587,59 +586,48 @@ func (j *Node) CheckUint64() (uint64, bool) {
 
 // GetNodes will find the JSON node (and parent node) that corresponds to the given JSON path
 func (j *Node) GetNodes(JSONpath string) (*Node, *Node, error) {
-	parent := j
 	if JSONpath == "x" || JSONpath == "" {
-		// If the root node is a map or list with one element or less, use that as the node
-		if m, ok := j.CheckNodeMap(); ok && len(m) <= 1 {
-			return parent, NilNode, nil
-		} else if l, ok := j.CheckNodeList(); ok && len(l) <= 1 {
-			return parent, NilNode, nil
-		}
-		// We may have encountered a list with more than one item, for example
-		return parent, NilNode, nil
+		return j, NilNode, nil
 	}
-	// JSON path starting with x[ is a special case.
-	if strings.HasPrefix(JSONpath, "x[") {
-		// Add a "." between "x" and "[".
-		JSONpath = "x." + JSONpath[1:]
+
+	// Normalize: strip leading "x." or "." prefix, or "x" when followed by "["
+	if strings.HasPrefix(JSONpath, "x.") {
+		JSONpath = JSONpath[2:]
+	} else if strings.HasPrefix(JSONpath, ".") {
+		JSONpath = JSONpath[1:]
+	} else if strings.HasPrefix(JSONpath, "x[") {
+		JSONpath = JSONpath[1:]
 	}
-	// The "current node" starts out with being the root node
+
+	// Split the path into components on "." and process each one
+	parts := strings.Split(JSONpath, ".")
 	n := j
-	if strings.Contains(JSONpath, ".") {
-		for i, part := range strings.Split(JSONpath, ".") {
-			if i == 0 && (part == "" || part == "x") {
-				// If the current node is a map or list with one element or less, use that as the next node
-				if m, ok := n.CheckNodeMap(); ok && len(m) <= 1 {
-					n = parent
-				} else if l, ok := n.CheckNodeList(); ok && len(l) <= 1 {
-					n = parent
-				}
-			} else if strings.Contains(part, "[") {
-				fields := strings.SplitN(part, "[", 2)
-				name := fields[0]
-				secondpart := fields[1]
-				fields = strings.SplitN(secondpart, "]", 2)
-				stringIndex := fields[0]
-				index, err := strconv.Atoi(stringIndex)
-				if err != nil {
-					return NilNode, NilNode, errors.New("Invalid index: " + stringIndex)
-				}
-				parent = n
-				if name == "" {
-					n = n.Get(index)
-				} else {
-					parent = n.Get(name)
-					n = parent.Get(index)
-				}
-			} else {
-				parent = n
-				n = n.Get(part)
-			}
+	parent := j
+	for _, part := range parts {
+		if part == "" {
+			continue
 		}
-	} else {
-		parent = n
-		part := JSONpath
-		n = n.Get(part)
+		if strings.Contains(part, "[") {
+			fields := strings.SplitN(part, "[", 2)
+			name := fields[0]
+			secondpart := fields[1]
+			fields = strings.SplitN(secondpart, "]", 2)
+			stringIndex := fields[0]
+			index, err := strconv.Atoi(stringIndex)
+			if err != nil {
+				return NilNode, NilNode, errors.New("Invalid index: " + stringIndex)
+			}
+			parent = n
+			if name == "" {
+				n = n.Get(index)
+			} else {
+				parent = n.Get(name)
+				n = parent.Get(index)
+			}
+		} else {
+			parent = n
+			n = n.Get(part)
+		}
 	}
 	return n, parent, nil
 }
@@ -664,7 +652,7 @@ func (j *Node) AddJSON(JSONpath string, JSONdata []byte) error {
 	if err != nil {
 		return err
 	}
-	node.data = append(l, newNode)
+	node.data = append(l, newNode.data)
 	return nil
 }
 
@@ -679,7 +667,7 @@ func (j *Node) DelKey(JSONpath string) error {
 	if !ok {
 		return errors.New("Can only remove a key from a map. Not a map: " + mapnode.Info())
 	}
-	keyToRemove := lastpart(JSONpath)
+	keyToRemove := LastPart(JSONpath)
 	foundKey := false
 	for k := range m {
 		if k == keyToRemove {
@@ -690,33 +678,29 @@ func (j *Node) DelKey(JSONpath string) error {
 	if !foundKey {
 		return ErrKeyNotFound
 	}
-	delete(m, lastpart(JSONpath))
+	delete(m, LastPart(JSONpath))
 	return nil
 }
 
 // Info returns a description of the node
 func (j *Node) Info() string {
-	var buf bytes.Buffer
 	if j == NilNode {
-		buf.WriteString("Nil Node")
-	} else if m, ok := j.CheckMap(); ok {
-		buf.WriteString(fmt.Sprintf("Map with %d elements.", len(m)))
-	} else if l, ok := j.CheckList(); ok {
-		buf.WriteString(fmt.Sprintf("List with %d elements.", len(l)))
-	} else if s, ok := j.CheckString(); ok {
-		buf.WriteString(fmt.Sprintf("String: %s", s))
-	} else if s, ok := j.CheckInt(); ok {
-		buf.WriteString(fmt.Sprintf("Int: %d", s))
-	} else if b, ok := j.CheckBool(); ok {
-		buf.WriteString(fmt.Sprintf("Bool: %v", b))
-	} else if i, ok := j.CheckInt64(); ok {
-		buf.WriteString(fmt.Sprintf("Int64: %v", i))
-	} else if u, ok := j.CheckUint64(); ok {
-		buf.WriteString(fmt.Sprintf("Uint64: %v", u))
-	} else if f, ok := j.CheckFloat64(); ok {
-		buf.WriteString(fmt.Sprintf("Float64: %v", f))
-	} else {
-		buf.WriteString("Unknown node type")
+		return "Nil Node"
 	}
-	return buf.String()
+	switch v := j.data.(type) {
+	case map[string]any:
+		return fmt.Sprintf("Map with %d elements.", len(v))
+	case []any:
+		return fmt.Sprintf("List with %d elements.", len(v))
+	case string:
+		return fmt.Sprintf("String: %s", v)
+	case bool:
+		return fmt.Sprintf("Bool: %v", v)
+	case float64:
+		return fmt.Sprintf("Float64: %v", v)
+	case nil:
+		return "Nil Node"
+	default:
+		return fmt.Sprintf("Unknown node type: %T", j.data)
+	}
 }

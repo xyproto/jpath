@@ -84,9 +84,14 @@ func (jf *JFile) SetString(JSONpath, value string) error {
 	}
 
 	// Set the string
-	m[lastpart(JSONpath)] = value
+	m[LastPart(JSONpath)] = value
 
-	newdata, err := jf.rootnode.PrettyJSON()
+	// Use the correct JSON function, depending on the pretty parameter
+	JSON := jf.rootnode.JSON
+	if jf.pretty {
+		JSON = jf.rootnode.PrettyJSON
+	}
+	newdata, err := JSON()
 	if err != nil {
 		return err
 	}
