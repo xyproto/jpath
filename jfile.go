@@ -38,6 +38,11 @@ func (jf *JFile) GetFilename() string {
 	return jf.filename
 }
 
+// GetRootNode returns the root node of the JSON document
+func (jf *JFile) GetRootNode() *Node {
+	return jf.rootnode
+}
+
 // SetPretty can be used for setting the "pretty" flag to true, for indenting
 // all JSON output. Set to true by default.
 func (jf *JFile) SetPretty(pretty bool) {

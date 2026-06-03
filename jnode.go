@@ -98,6 +98,19 @@ func (j *Node) Set(key string, val any) {
 	m[key] = val
 }
 
+// SetPath sets a value by traversing a dotted path like "user.name".
+// "x.user.name", ".user.name" and "user.name" are equivalent.
+func (j *Node) SetPath(path string, val any) {
+	parts := strings.Split(path, ".")
+	if len(parts) > 0 && (parts[0] == "" || parts[0] == "x") {
+		parts = parts[1:]
+	}
+	if len(parts) == 0 {
+		return
+	}
+	j.SetBranch(parts, val)
+}
+
 // SetBranch modifies `Node`, recursively checking/creating map keys for the supplied path,
 // and then finally writing in the value.
 func (j *Node) SetBranch(branch []string, val any) {
@@ -369,6 +382,22 @@ func (j *Node) String(args ...string) string {
 	}
 
 	return def
+}
+
+// StringValue returns the raw string for string nodes,
+// or the compact JSON representation for other types.
+func (j *Node) StringValue() string {
+	if j == nil || j == NilNode || j.data == nil {
+		return ""
+	}
+	if s, ok := j.CheckString(); ok {
+		return s
+	}
+	b, err := json.Marshal(j.data)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 // Int guarantees the return of an `int` (with optional default)
