@@ -156,7 +156,7 @@ func (j *Node) GetKey(key string) (*Node, bool) {
 func (j *Node) GetIndex(index int) (*Node, bool) {
 	a, ok := j.CheckList()
 	if ok {
-		if len(a) > index {
+		if index >= 0 && index < len(a) {
 			return &Node{a[index]}, true
 		}
 	}
